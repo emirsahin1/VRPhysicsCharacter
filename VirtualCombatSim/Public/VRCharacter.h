@@ -81,6 +81,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float grabOffsetLimit;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	AActor* leftGrabbedObject;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	AActor* rightGrabbedObject;
+
 private:
 
 	UFUNCTION()
@@ -113,10 +119,10 @@ private:
 	
 	void OnMoveBegin();
 	void OnMoveEnd();
-	float GetHandToObjectDistance(UInversePhysicsSkeletalMeshComponent* handMesh, AActor* object);
+	float GetHandToMeshDistance(UInversePhysicsSkeletalMeshComponent* handMesh, UMotionControllerComponent* controler);
 
 	bool physicsIsOff;
 	bool canSnapTurn;
-	AActor* leftGrabbedObject;
-	AActor* rightGrabbedObject;
+
+
 };

@@ -115,10 +115,6 @@ void AVRCharacter::BeginPlay()
 	Super::BeginPlay();
 	rightPhysicsConstraint->SetConstrainedComponents(rightConstraint, FName(), rightControllerPhysicsMesh, FName());
 	leftPhysicsConstraint->SetConstrainedComponents(leftConstraint, FName(), leftControllerPhysicsMesh, FName());
-
-	FAttachmentTransformRules transformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
-	rightControllerPhysicsMesh->AttachToComponent(rightController, transformRules);
-	leftControllerPhysicsMesh->AttachToComponent(leftController, transformRules);
 }
 
 // Called every frame
@@ -128,18 +124,26 @@ void AVRCharacter::Tick(float DeltaTime)
 
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::FromInt(GetCharacterMovement()->Velocity.Size()));
 
-	if (GetCharacterMovement()->Velocity.Size() > 0.0) {
-		OnMoveBegin();
+
+	if (leftController->CurrentTrackingStatus == ETrackingStatus::NotTracked) {
+		leftControllerPhysicsMesh->SetSimulatePhysics(false);
 	}
-	else {
-		OnMoveEnd();
+	else if(!leftControllerPhysicsMesh->IsSimulatingPhysics()){
+		leftControllerPhysicsMesh->SetSimulatePhysics(true);
 	}
 
-	if (GetHandToObjectDistance(leftControllerPhysicsMesh, leftGrabbedObject) > grabOffsetLimit) {
+	if (rightController->CurrentTrackingStatus == ETrackingStatus::NotTracked) {
+		rightControllerPhysicsMesh->SetSimulatePhysics(false);
+	}
+	else if (!rightControllerPhysicsMesh->IsSimulatingPhysics()) {
+		rightControllerPhysicsMesh->SetSimulatePhysics(true);
+	}
+
+	if (leftGrabbedObject != nullptr && GetHandToMeshDistance(leftControllerPhysicsMesh, leftController) > grabOffsetLimit) {
 		ReleaseLeft();
 	}
 
-	if (GetHandToObjectDistance(rightControllerPhysicsMesh, rightGrabbedObject) > grabOffsetLimit) {
+	if (rightGrabbedObject != nullptr && GetHandToMeshDistance(rightControllerPhysicsMesh, rightController) > grabOffsetLimit) {
 		ReleaseRight();
 	}
 
@@ -160,28 +164,26 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction(TEXT("GrabRight"), EInputEvent::IE_Released, this, &AVRCharacter::ReleaseRight);
 }
 
-float AVRCharacter::GetHandToObjectDistance(UInversePhysicsSkeletalMeshComponent* handMesh, AActor* object) {
-	if (IsValid(object)) {
-		return (handMesh->GetComponentLocation() - object->GetActorLocation()).Size();
-	}
-	else
-		return 0.0f;
+float AVRCharacter::GetHandToMeshDistance(UInversePhysicsSkeletalMeshComponent* handMesh, UMotionControllerComponent* controller) {
+	return (handMesh->GetComponentLocation() - controller->GetComponentLocation()).Size();
 }
 
 void AVRCharacter::GrabLeft() {
 	leftGrabbedObject = GrabObject(leftGrabCapsule, leftGrabPhysicsConstraint, leftControllerPhysicsMesh);
 }
 
-void AVRCharacter::ReleaseLeft() {
-	ReleaseObject(leftGrabbedObject, leftGrabPhysicsConstraint);
-}
-
 void AVRCharacter::GrabRight() {
 	rightGrabbedObject = GrabObject(rightGrabCapsule, rightGrabPhysicsConstraint, rightControllerPhysicsMesh);
 }
 
+void AVRCharacter::ReleaseLeft() {
+	ReleaseObject(leftGrabbedObject, leftGrabPhysicsConstraint);
+	leftGrabbedObject = nullptr;
+}
+
 void AVRCharacter::ReleaseRight() {
 	ReleaseObject(rightGrabbedObject, rightGrabPhysicsConstraint);
+	rightGrabbedObject = nullptr;
 }
 
 AActor* AVRCharacter::GrabObject(UCapsuleComponent* gripCapsule, UPhysicsConstraintComponent* constraint, UInversePhysicsSkeletalMeshComponent* handMesh) {
@@ -212,6 +214,10 @@ AActor* AVRCharacter::GrabObject(UCapsuleComponent* gripCapsule, UPhysicsConstra
 		}
 		if (IsValid(closestObject)) {
 			//Cast<IVRInteractions>(closestObject)->Grabbed(constraint, handMesh);
+			/*FAttachmentTransformRules transformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+			if (leftGrabbedObject != closestObject && rightGrabbedObject != closestObject) {
+				closestObject->AttachToComponent(handMesh, transformRules);
+			}*/
 			IVRInteractions::Execute_Grabbed(closestObject, constraint, handMesh);
 			return closestObject;
 		}
@@ -221,17 +227,14 @@ AActor* AVRCharacter::GrabObject(UCapsuleComponent* gripCapsule, UPhysicsConstra
 
 void AVRCharacter::ReleaseObject(AActor* object, UPhysicsConstraintComponent* constraint) {
 	if (IsValid(object)) {
-		//Cast<IVRInteractions>(object)->Released(constraint);
 		IVRInteractions::Execute_Released(object, constraint);
-		object = nullptr; 
 	}
 }
 
 void AVRCharacter::OnJump() {
-	OnMoveBegin();
+	//OnMoveBegin();
 	Jump();
 }
-
 
 void AVRCharacter::OnMoveBegin() {
 
@@ -255,13 +258,13 @@ void AVRCharacter::OnMoveEnd() {
 }
 
 void AVRCharacter::MovementRightY(float value) {
-	OnMoveBegin();
+	//OnMoveBegin();
 	FVector fwdVector = VRCamera->GetForwardVector();
 	AddMovementInput(FVector(fwdVector.X * 10.0f, fwdVector.Y * 10.0f, 0.0f), value / 20.0f);
 }
 
 void AVRCharacter::MovementRightX(float value) {
-	OnMoveBegin();
+	//OnMoveBegin();
 	FVector rightVector = VRCamera->GetRightVector();
 	AddMovementInput(FVector(rightVector.X * 10.0f, rightVector.Y * 10.0f, 0.0f), value / 20.0f);
 }
@@ -272,7 +275,16 @@ void AVRCharacter::SnapTurn(float value) {
 		if (canSnapTurn) {
 			OnMoveBegin();
 			FRotator(0.0f, 0.0f, value);
+			//Test turning every child component.
 			VRTrackingCenter->AddWorldRotation(FRotator(0.0f, value * 45.0f, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+
+			if (leftGrabbedObject != nullptr) {
+				leftGrabbedObject->AddActorWorldOffset(leftControllerPhysicsMesh->GetComponentLocation() - leftGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
+			}
+			if (rightGrabbedObject != nullptr) {
+				rightGrabbedObject->AddActorWorldOffset(rightControllerPhysicsMesh->GetComponentLocation() - rightGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
+			}
+
 			canSnapTurn = false;
 			OnMoveEnd();
 		}
