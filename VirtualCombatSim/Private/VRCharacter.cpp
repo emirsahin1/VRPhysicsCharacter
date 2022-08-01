@@ -278,12 +278,12 @@ void AVRCharacter::SnapTurn(float value) {
 			//Test turning every child component.
 			VRTrackingCenter->AddWorldRotation(FRotator(0.0f, value * 45.0f, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
 
-			if (leftGrabbedObject != nullptr) {
-				leftGrabbedObject->AddActorWorldOffset(leftControllerPhysicsMesh->GetComponentLocation() - leftGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
-			}
-			if (rightGrabbedObject != nullptr) {
-				rightGrabbedObject->AddActorWorldOffset(rightControllerPhysicsMesh->GetComponentLocation() - rightGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
-			}
+			//if (leftGrabbedObject != nullptr) {
+			//	leftGrabbedObject->AddActorWorldOffset(leftControllerPhysicsMesh->GetComponentLocation() - leftGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
+			//}
+			//if (rightGrabbedObject != nullptr) {
+			//	rightGrabbedObject->AddActorWorldOffset(rightControllerPhysicsMesh->GetComponentLocation() - rightGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
+			//}
 
 			canSnapTurn = false;
 			OnMoveEnd();
