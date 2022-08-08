@@ -58,7 +58,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		UInversePhysicsSkeletalMeshComponent* leftControllerPhysicsMesh;
-
+	
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		UPhysicsConstraintComponent* rightPhysicsConstraint;
@@ -87,6 +87,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	AActor* rightGrabbedObject;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float orientStrength;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float velStrength;
+
 private:
 
 	UFUNCTION()
@@ -113,9 +119,9 @@ private:
 	UFUNCTION()
 		void ReleaseRight();
 
-	void ReleaseObject(AActor* object, UPhysicsConstraintComponent* constraint);
+	void ReleaseObject(FName hand, AActor* object, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint);
 
-	AActor* GrabObject(UCapsuleComponent* gripCapsule, UPhysicsConstraintComponent* constraint, UInversePhysicsSkeletalMeshComponent* handMesh);
+	AActor* GrabObject(FName hand, UCapsuleComponent* gripCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* handCapsule);
 	
 	void OnMoveBegin();
 	void OnMoveEnd();

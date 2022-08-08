@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "PhysSkeletalMeshActor.h"
+#include "Components/CapsuleComponent.h"
+//#include "VRCharacter.h"
 #include "UObject/Interface.h"
 #include "VRInteractions.generated.h"
 
@@ -24,9 +26,13 @@ class VIRTUALCOMBATSIM_API IVRInteractions
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact|FromInteract")
-	void Grabbed(UPhysicsConstraintComponent* physicsConstraint, UInversePhysicsSkeletalMeshComponent* handMesh);
+	void Grabbed(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character);
 
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact|FromInteract")
-	void Released(UPhysicsConstraintComponent* physicsConstraint);
+	void Released(FName hand, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact|FromInteract")
+	void TriggerRight();
+
 };
