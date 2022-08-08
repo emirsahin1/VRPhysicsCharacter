@@ -12,6 +12,8 @@ AVRCharacter::AVRCharacter()
 	physicsIsOff = false;
 	canSnapTurn = true;
 	grabOffsetLimit = 30.0f;
+	orientStrength = 10000.0;
+	velStrength = 1000.0; 
 
 	VRTrackingCenter = CreateDefaultSubobject<USceneComponent>(TEXT("VRTrackingCenter"));
 	VRCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("VRCamera"));
@@ -169,24 +171,24 @@ float AVRCharacter::GetHandToMeshDistance(UInversePhysicsSkeletalMeshComponent* 
 }
 
 void AVRCharacter::GrabLeft() {
-	leftGrabbedObject = GrabObject(leftGrabCapsule, leftGrabPhysicsConstraint, leftControllerPhysicsMesh);
+	leftGrabbedObject = GrabObject(FName("Left"), leftGrabCapsule, leftGrabPhysicsConstraint, leftPhysicsConstraint, leftControllerPhysicsMesh, leftGrabCapsule);
 }
 
 void AVRCharacter::GrabRight() {
-	rightGrabbedObject = GrabObject(rightGrabCapsule, rightGrabPhysicsConstraint, rightControllerPhysicsMesh);
+	rightGrabbedObject = GrabObject(FName("Right"), rightGrabCapsule, rightGrabPhysicsConstraint, rightPhysicsConstraint, rightControllerPhysicsMesh, rightGrabCapsule);
 }
 
 void AVRCharacter::ReleaseLeft() {
-	ReleaseObject(leftGrabbedObject, leftGrabPhysicsConstraint);
+	ReleaseObject(FName("Left"), leftGrabbedObject, leftGrabPhysicsConstraint, leftPhysicsConstraint);
 	leftGrabbedObject = nullptr;
 }
 
 void AVRCharacter::ReleaseRight() {
-	ReleaseObject(rightGrabbedObject, rightGrabPhysicsConstraint);
+	ReleaseObject(FName("Right"), rightGrabbedObject, rightGrabPhysicsConstraint, rightPhysicsConstraint);
 	rightGrabbedObject = nullptr;
 }
 
-AActor* AVRCharacter::GrabObject(UCapsuleComponent* gripCapsule, UPhysicsConstraintComponent* constraint, UInversePhysicsSkeletalMeshComponent* handMesh) {
+AActor* AVRCharacter::GrabObject(FName hand, UCapsuleComponent* gripCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* handCapsule) {
 	
 	AActor* closestObject = nullptr;
 	float minDistance = 0.0f;
@@ -218,16 +220,17 @@ AActor* AVRCharacter::GrabObject(UCapsuleComponent* gripCapsule, UPhysicsConstra
 			if (leftGrabbedObject != closestObject && rightGrabbedObject != closestObject) {
 				closestObject->AttachToComponent(handMesh, transformRules);
 			}*/
-			IVRInteractions::Execute_Grabbed(closestObject, constraint, handMesh);
+			//closestObject->GetComponentsByTag(TSubclassOf<UShapeComponent>(), FName("MainGrip"));
+			IVRInteractions::Execute_Grabbed(closestObject, hand, handMesh, grabConstraint, handConstraint, this);
 			return closestObject;
 		}
 	}
 	return nullptr;
 }
 
-void AVRCharacter::ReleaseObject(AActor* object, UPhysicsConstraintComponent* constraint) {
+void AVRCharacter::ReleaseObject(FName hand, AActor* object, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint) {
 	if (IsValid(object)) {
-		IVRInteractions::Execute_Released(object, constraint);
+		IVRInteractions::Execute_Released(object, hand, grabConstraint, handConstraint, this);
 	}
 }
 
