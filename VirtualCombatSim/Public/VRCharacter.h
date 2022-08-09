@@ -119,9 +119,9 @@ private:
 	UFUNCTION()
 		void ReleaseRight();
 
-	void ReleaseObject(FName hand, AActor* object, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint);
+	void ReleaseObject(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, AActor* object, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint);
 
-	AActor* GrabObject(FName hand, UCapsuleComponent* gripCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* handCapsule);
+	AActor* GrabObject(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* gripCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, UCapsuleComponent* handCapsule);
 	
 	void OnMoveBegin();
 	void OnMoveEnd();

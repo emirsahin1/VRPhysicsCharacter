@@ -6,7 +6,9 @@
 #include "Components/CapsuleComponent.h"
 #include "VRInteractions.h"
 #include "PhysSkeletalMeshActor.h"
+#include "VRCharacter.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Animation/AnimationAsset.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
@@ -29,9 +31,15 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	/*UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact|FromInteract")
-	void Grabbed(UPhysicsConstraintComponent* physicsConstraint, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* handCapsule);
-	virtual void Grabbed_Implementation(UPhysicsConstraintComponent* physicsConstraint, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* handCapsule) override;*/
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact|FromInteract")
+	void Grabbed(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character);
+	virtual void Grabbed_Implementation(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact|FromInteract")
+	void Released(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character);
+	virtual void Released_Implementation(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character) override;
+
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
 		UCapsuleComponent* mainGrabCapsule;
@@ -53,4 +61,26 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
 		USceneComponent* barrelPos;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+		FName mainSocket;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+		UAnimationAsset* mainAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+		UAnimationAsset* secAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+		FVector angularDriveParams;
+
+
+private:
+	UPhysicsConstraintComponent* mainPhysicsConstraint; 
+	UPhysicsConstraintComponent* secPhysicsConstraint;
+	UPhysicsConstraintComponent* mainHandVisualConstraint;
+	UPhysicsConstraintComponent* secHandVisualConstraint;
+	float rollOffset;
+
+	void GrabAtLocation(UInversePhysicsSkeletalMeshComponent* grabLocation, UInversePhysicsSkeletalMeshComponent* hand, UPhysicsConstraintComponent* grabConstraint, bool isMain);
 };
