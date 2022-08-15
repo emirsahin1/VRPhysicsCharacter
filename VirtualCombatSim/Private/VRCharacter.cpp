@@ -14,6 +14,8 @@ AVRCharacter::AVRCharacter()
 	grabOffsetLimit = 30.0f;
 	orientStrength = 10000.0;
 	velStrength = 1000.0; 
+	hmdLoc = FVector(0.0f, 0.0f, 0.0f);
+	capsuleLoc = FVector(0.0f, 0.0f, 0.0f);
 
 	VRTrackingCenter = CreateDefaultSubobject<USceneComponent>(TEXT("VRTrackingCenter"));
 	VRCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("VRCamera"));
@@ -125,7 +127,16 @@ void AVRCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::FromInt(GetCharacterMovement()->Velocity.Size()));
+	
+	hmdLoc = VRCamera->GetComponentLocation();
+	capsuleLoc = ACharacter::GetCapsuleComponent()->GetComponentLocation();
+	float offsetX = hmdLoc.X - capsuleLoc.X;
+	float offsetY = hmdLoc.Y - capsuleLoc.Y;
 
+	AddActorWorldOffset(FVector(offsetX, offsetY, 0.0f), true, nullptr, ETeleportType::None);
+	VRTrackingCenter->AddWorldOffset(FVector(offsetX * -1.0f, offsetY * -1.0f, 0.0f), false, nullptr, ETeleportType::None);
+	//ACharacter::GetCapsuleComponent()->SetCapsuleHalfHeight(hmdLoc.Z / 2.0f, true);
+	
 
 	if (leftController->CurrentTrackingStatus == ETrackingStatus::NotTracked) {
 		leftControllerPhysicsMesh->SetSimulatePhysics(false);
@@ -278,18 +289,33 @@ void AVRCharacter::SnapTurn(float value) {
 		if (canSnapTurn) {
 			OnMoveBegin();
 			FRotator(0.0f, 0.0f, value);
-			//Test turning every child component.
+		
+			//There is probably a cleaner way of writing this code :)
+			if (leftGrabbedObject != nullptr) {
+				Cast<UPrimitiveComponent>(leftGrabbedObject->GetRootComponent())->SetSimulatePhysics(false);
+				FAttachmentTransformRules transformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+				leftGrabbedObject->AttachToComponent(leftController, transformRules);
+			}
+			if (rightGrabbedObject != nullptr) {
+				Cast<UPrimitiveComponent>(rightGrabbedObject->GetRootComponent())->SetSimulatePhysics(false);
+				FAttachmentTransformRules transformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+				rightGrabbedObject->AttachToComponent(rightController, transformRules);
+			}
+
 			VRTrackingCenter->AddWorldRotation(FRotator(0.0f, value * 45.0f, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
-
-			//if (leftGrabbedObject != nullptr) {
-			//	leftGrabbedObject->AddActorWorldOffset(leftControllerPhysicsMesh->GetComponentLocation() - leftGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
-			//}
-			//if (rightGrabbedObject != nullptr) {
-			//	rightGrabbedObject->AddActorWorldOffset(rightControllerPhysicsMesh->GetComponentLocation() - rightGrabbedObject->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
-			//}
-
 			canSnapTurn = false;
+
+			if (leftGrabbedObject != nullptr) {
+				leftGrabbedObject->DetachRootComponentFromParent();
+				Cast<UPrimitiveComponent>(leftGrabbedObject->GetRootComponent())->SetSimulatePhysics(true);
+
+			}
+			if (rightGrabbedObject != nullptr) {
+				rightGrabbedObject->DetachRootComponentFromParent();
+				Cast<UPrimitiveComponent>(rightGrabbedObject->GetRootComponent())->SetSimulatePhysics(true);
+			}
 			OnMoveEnd();
+
 		}
 	}
 	else {

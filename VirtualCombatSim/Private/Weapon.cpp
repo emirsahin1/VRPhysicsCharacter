@@ -12,30 +12,49 @@ AWeapon::AWeapon()
 	secPhysicsConstraint = nullptr;
 	mainHandVisualConstraint = nullptr;
 	secHandVisualConstraint = nullptr;
+	sliderHand = nullptr; 
+	sliderSpline = nullptr; 
+	sliderGrabbed = false;
+	canBolt = false;
+	rightHandMain = false;
+	interpSpeed = 400; 
+	boltImpulse = 550;
+	recoilIntensity = 700;
+	impactIntensity = 1200;
 	rollOffset = 0; 
 	angularDriveParams = FVector(0.0f, 0.0f, 0.0f);
 
 	gunBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("gunBody"));
 	mainGrabCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("mainGrabCapsule"));
 	altGrabCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("altGrabCapsule"));
+	sliderCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("sliderCapsule"));
+	sliderSpline = CreateDefaultSubobject<USplineComponent>(TEXT("sliderSpline"));
 
-	mainGrabPosition = CreateDefaultSubobject<UInversePhysicsSkeletalMeshComponent>(TEXT("mainGrabPosition"));
-	altGrabPosition = CreateDefaultSubobject<UInversePhysicsSkeletalMeshComponent>(TEXT("altGrabPosition"));
+	mainGrabPosition_R = CreateDefaultSubobject<USceneComponent>(TEXT("mainGrabPosition_R"));
+	mainGrabPosition_L = CreateDefaultSubobject<USceneComponent>(TEXT("mainGrabPosition_L"));
+
+	altGrabPosition_R = CreateDefaultSubobject<USceneComponent>(TEXT("altGrabPosition_R"));
+	altGrabPosition_L = CreateDefaultSubobject<USceneComponent>(TEXT("altGrabPosition_L"));
+
 
 	gunSlider = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("gunSlider"));
 	barrelPos = CreateDefaultSubobject<USceneComponent>(TEXT("barrelPos"));
 
 	mainGrabCapsule->SetupAttachment(gunBody);
 	altGrabCapsule->SetupAttachment(gunBody);
+	sliderCapsule->SetupAttachment(gunBody);
+	sliderSpline->SetupAttachment(gunBody);
 
-	mainGrabPosition->SetupAttachment(gunBody);
-	altGrabPosition->SetupAttachment(gunBody);
+
+	mainGrabPosition_R->SetupAttachment(gunBody);
+	mainGrabPosition_L->SetupAttachment(gunBody);
+
+	altGrabPosition_R->SetupAttachment(gunBody);
+	altGrabPosition_L->SetupAttachment(gunBody);
 
 	gunSlider->SetupAttachment(gunBody);
 	barrelPos->SetupAttachment(gunBody);
 
-	mainGrabPosition->SetVisibility(false);
-	altGrabPosition->SetVisibility(false);
 }
 
 // Called when the game starts or when spawned
@@ -43,37 +62,63 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 	
+
 }
 
+void AWeapon::TriggerRight_Implementation() {
+	if (rightHandMain) {
+		FHitResult hitResult; 
+		GetWorld()->LineTraceSingleByChannel(hitResult, barrelPos->GetComponentLocation(), barrelPos->GetForwardVector() * 10000.0f, ECollisionChannel::ECC_Visibility);
+		DrawDebugLine(GetWorld(), barrelPos->GetComponentLocation(), barrelPos->GetForwardVector() * 10000.0f, FColor(255, 255, 0), false, 5.0f, 0U, 1.0f);
+		gunBody->AddImpulse(gunBody->GetForwardVector() * recoilIntensity * -1.0f, FName(), false);
+		
+		UPrimitiveComponent* hitComponent = hitResult.GetComponent();
+		if (IsValid(hitComponent)) {
+			hitComponent->AddImpulse((hitResult.TraceEnd - hitResult.TraceStart).GetSafeNormal() * impactIntensity, FName(), false);
+		}
+	}
+}
 
 void AWeapon::Grabbed_Implementation(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character) {
-	handConstraint->SetAngularSwing1Limit(EAngularConstraintMotion::ACM_Free, 0.0f);
-	handConstraint->SetAngularSwing2Limit(EAngularConstraintMotion::ACM_Free, 0.0f);
-	handConstraint->SetAngularTwistLimit(EAngularConstraintMotion::ACM_Free, 0.0f);
-
-	//For inverting the left hand. 
-	if (hand == FName("Left")) {
-		rollOffset = 180.0f;
-	}
-	else {
-		rollOffset = 0.0f;
-	}
-
+	
 	if (grabCapsule->IsOverlappingComponent(mainGrabCapsule)) {
+
+		FreeAngularMotors(handConstraint);
+
 		if (IsValid(mainPhysicsConstraint)) { //If the main grip is already equiped, detach it. 
-			Released(FName("None"), nullptr, nullptr, mainPhysicsConstraint, handConstraint, nullptr);
+			Released(FName("None"), nullptr, nullptr, mainPhysicsConstraint, mainHandVisualConstraint, nullptr);
 		}
+
 		mainPhysicsConstraint = grabConstraint;
 		mainHandVisualConstraint = handConstraint;
-		GrabAtLocation(mainGrabPosition, handMesh, mainPhysicsConstraint, true);
+
+		if (hand == "Right") {
+			rightHandMain = true;
+			GrabAtLocation(mainGrabPosition_R, handMesh, mainPhysicsConstraint);
+		}
+		else {
+			rightHandMain = false;
+			GrabAtLocation(mainGrabPosition_L, handMesh, mainPhysicsConstraint);
+		}
 	}
 	else if (grabCapsule->IsOverlappingComponent(altGrabCapsule)) {
 		if (IsValid(mainPhysicsConstraint)) { //The main grip must be equipped for us to grip alt grip.
+			FreeAngularMotors(handConstraint);
 			secPhysicsConstraint = grabConstraint;
 			secHandVisualConstraint = handConstraint;
 			handConstraint->SetAngularDriveParams(angularDriveParams.X, angularDriveParams.Y, angularDriveParams.Z);
-			GrabAtLocation(altGrabPosition, handMesh, secPhysicsConstraint, false);
+
+			if (hand == "Right") {
+				GrabAtLocation(altGrabPosition_R, handMesh, secPhysicsConstraint);
+			}
+			else {
+				GrabAtLocation(altGrabPosition_L, handMesh, secPhysicsConstraint);
+			}
 		}
+	}
+	else if (grabCapsule->IsOverlappingComponent(sliderCapsule)) {
+		sliderGrabbed = true; 
+		sliderHand = handMesh;
 	}
 	else { //Do a regular grab. 
 		grabConstraint->SetConstrainedComponents(handMesh, FName(), gunBody, FName());
@@ -83,23 +128,27 @@ void AWeapon::Grabbed_Implementation(FName hand, UInversePhysicsSkeletalMeshComp
 }
 
 void AWeapon::Released_Implementation(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character) {
-	handConstraint->SetAngularSwing1Limit(EAngularConstraintMotion::ACM_Free, 0.0f);
-	handConstraint->SetAngularSwing2Limit(EAngularConstraintMotion::ACM_Free, 0.0f);
-	handConstraint->SetAngularTwistLimit(EAngularConstraintMotion::ACM_Free, 0.0f);
 
+	if (IsValid(handMesh) && handMesh == sliderHand) {
+		sliderHand = nullptr;
+		sliderGrabbed = false;
+	}
 	//Main hand is releasing, release both hands if alt grip is grabbed.
-	if (grabConstraint == mainPhysicsConstraint) {
+	else if (grabConstraint == mainPhysicsConstraint) {
 		if (IsValid(secPhysicsConstraint)) {
+			LockAngularMotors(secHandVisualConstraint);
 			secPhysicsConstraint->BreakConstraint();
 			secPhysicsConstraint = nullptr;
 			secHandVisualConstraint->SetAngularDriveParams(character->orientStrength, character->velStrength, 0.0f);
 			secHandVisualConstraint = nullptr;
 		}
+		LockAngularMotors(mainHandVisualConstraint);
 		mainPhysicsConstraint->BreakConstraint();
 		mainPhysicsConstraint = nullptr;
 		mainHandVisualConstraint = nullptr;
 	}
 	else if (grabConstraint == secPhysicsConstraint) {
+		LockAngularMotors(secHandVisualConstraint);
 		secPhysicsConstraint->BreakConstraint();
 		secPhysicsConstraint = nullptr;
 		secHandVisualConstraint->SetAngularDriveParams(character->orientStrength, character->velStrength, 0.0f);
@@ -110,32 +159,48 @@ void AWeapon::Released_Implementation(FName hand, UInversePhysicsSkeletalMeshCom
 	}
 }
 
+void AWeapon::GrabAtLocation(USceneComponent* grabLocation, UInversePhysicsSkeletalMeshComponent* hand, UPhysicsConstraintComponent* grabConstraint) {
+	hand->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	FTransform grabLocTransform = grabLocation->GetComponentTransform();
+	hand->SetWorldLocationAndRotation(grabLocTransform.GetLocation(), grabLocTransform.GetRotation(), false, (FHitResult*) nullptr, ETeleportType::TeleportPhysics);
+	grabConstraint->SetConstrainedComponents(hand, FName(), gunBody, FName());
+	
+	hand->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+
+void AWeapon::FreeAngularMotors(UPhysicsConstraintComponent* handConstraint) {
+	handConstraint->SetAngularSwing1Limit(EAngularConstraintMotion::ACM_Free, 0.0f);
+	handConstraint->SetAngularSwing2Limit(EAngularConstraintMotion::ACM_Free, 0.0f);
+	handConstraint->SetAngularTwistLimit(EAngularConstraintMotion::ACM_Free, 0.0f);
+}
+
+void AWeapon::LockAngularMotors(UPhysicsConstraintComponent* handConstraint) {
+	handConstraint->SetAngularSwing1Limit(EAngularConstraintMotion::ACM_Locked, 0.0f);
+	handConstraint->SetAngularSwing2Limit(EAngularConstraintMotion::ACM_Locked, 0.0f);
+	handConstraint->SetAngularTwistLimit(EAngularConstraintMotion::ACM_Locked, 0.0f);
+}
 
 // Called every frame
 void AWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-}
-
-void AWeapon::GrabAtLocation(UInversePhysicsSkeletalMeshComponent* grabLocation, UInversePhysicsSkeletalMeshComponent* hand, UPhysicsConstraintComponent* grabConstraint, bool isMain) {
-	hand->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
-	if (isMain) {
-		FTransform socketTransform = hand->GetSocketTransform(mainSocket, ERelativeTransformSpace::RTS_World);
-		FRotator socketRotation = socketTransform.GetRotation().Rotator();
-		socketRotation.Roll = socketRotation.Roll + rollOffset;
-		//TODO:: Make this so that the gun attaches based on its own socket. 
-		gunBody->SetWorldLocationAndRotation(socketTransform.GetLocation(), socketRotation, false, (FHitResult*) nullptr, ETeleportType::TeleportPhysics);
-		grabConstraint->SetConstrainedComponents(hand, FName(), gunBody, FName());
+	if (sliderGrabbed) {
+		FVector closestLoc = FMath::ClosestPointOnSegment(sliderHand->GetComponentLocation(), sliderSpline->GetLocationAtSplinePoint(0, ESplineCoordinateSpace::World), sliderSpline->GetLocationAtSplinePoint(1, ESplineCoordinateSpace::World));
+		gunSlider->SetWorldLocation(closestLoc);
 	}
 	else {
-		FTransform grabLocTransform = grabLocation->GetComponentTransform();
-		FRotator grabLocRotation = grabLocTransform.GetRotation().Rotator();
-		grabLocRotation.Roll = grabLocRotation.Roll + rollOffset;
-		hand->SetWorldLocationAndRotation(grabLocTransform.GetLocation(), grabLocRotation, false, (FHitResult*) nullptr, ETeleportType::TeleportPhysics);
-		grabConstraint->SetConstrainedComponents(hand, FName(), gunBody, FName());
-	}
+		gunSlider->SetWorldLocation(FMath::VInterpConstantTo(gunSlider->GetComponentLocation(), sliderSpline->GetLocationAtSplinePoint(1, ESplineCoordinateSpace::World), DeltaTime, interpSpeed));
 
-	hand->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		if (gunSlider->GetComponentLocation().Equals(sliderSpline->GetLocationAtSplinePoint(1, ESplineCoordinateSpace::World), 0.01f)) {
+			if (canBolt) {
+				gunBody->AddImpulse(gunBody->GetForwardVector() * boltImpulse, FName(), false);
+				canBolt = false;
+			}
+		}
+		else {
+			canBolt = true;
+		}
+	}
 }
