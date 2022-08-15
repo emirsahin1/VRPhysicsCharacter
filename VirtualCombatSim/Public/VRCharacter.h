@@ -10,6 +10,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "HeadMountedDisplayFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PhysSkeletalMeshActor.h"
 #include "VRInteractions.h"
@@ -126,7 +127,8 @@ private:
 	void OnMoveBegin();
 	void OnMoveEnd();
 	float GetHandToMeshDistance(UInversePhysicsSkeletalMeshComponent* handMesh, UMotionControllerComponent* controler);
-
+	FVector hmdLoc;
+	FVector capsuleLoc;
 	bool physicsIsOff;
 	bool canSnapTurn;
 

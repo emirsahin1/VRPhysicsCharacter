@@ -8,6 +8,8 @@
 #include "PhysSkeletalMeshActor.h"
 #include "VRCharacter.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Components/SplineComponent.h"
+#include "DrawDebugHelpers.h"
 #include "Animation/AnimationAsset.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
@@ -39,6 +41,9 @@ public:
 	void Released(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character);
 	virtual void Released_Implementation(FName hand, UInversePhysicsSkeletalMeshComponent* handMesh, UCapsuleComponent* grabCapsule, UPhysicsConstraintComponent* grabConstraint, UPhysicsConstraintComponent* handConstraint, AVRCharacter* character) override;
 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interact|FromInteract")
+	void TriggerRight();
+	virtual void TriggerRight_Implementation();
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
@@ -48,10 +53,22 @@ public:
 		UCapsuleComponent* altGrabCapsule;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-		UInversePhysicsSkeletalMeshComponent* mainGrabPosition;
+		UCapsuleComponent* sliderCapsule;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
-		UInversePhysicsSkeletalMeshComponent* altGrabPosition;
+		USplineComponent* sliderSpline;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		USceneComponent* mainGrabPosition_R;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		USceneComponent* mainGrabPosition_L;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		USceneComponent* altGrabPosition_L;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		USceneComponent* altGrabPosition_R;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
 		UStaticMeshComponent* gunBody;
@@ -74,13 +91,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
 		FVector angularDriveParams;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Settings")
+		float interpSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Settings")
+		float boltImpulse;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Slider")
+		bool sliderGrabbed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Settings")
+		float recoilIntensity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Settings")
+		float impactIntensity;
 
 private:
 	UPhysicsConstraintComponent* mainPhysicsConstraint; 
 	UPhysicsConstraintComponent* secPhysicsConstraint;
 	UPhysicsConstraintComponent* mainHandVisualConstraint;
 	UPhysicsConstraintComponent* secHandVisualConstraint;
+	UInversePhysicsSkeletalMeshComponent* sliderHand; 
+	bool rightHandMain;
 	float rollOffset;
+	void GrabAtLocation(USceneComponent* grabLocation, UInversePhysicsSkeletalMeshComponent* hand, UPhysicsConstraintComponent* grabConstraint);
+	void FreeAngularMotors(UPhysicsConstraintComponent* handConstraint);
+	void LockAngularMotors(UPhysicsConstraintComponent* handConstraint);
 
-	void GrabAtLocation(UInversePhysicsSkeletalMeshComponent* grabLocation, UInversePhysicsSkeletalMeshComponent* hand, UPhysicsConstraintComponent* grabConstraint, bool isMain);
+	bool canBolt; 
 };
