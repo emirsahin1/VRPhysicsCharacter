@@ -132,14 +132,20 @@ void AVRCharacter::Tick(float DeltaTime)
 	capsuleLoc = ACharacter::GetCapsuleComponent()->GetComponentLocation();
 	float offsetX = hmdLoc.X - capsuleLoc.X;
 	float offsetY = hmdLoc.Y - capsuleLoc.Y;
+	FVector2D offset = FVector2D(offsetX, offsetY);
 
-	AddActorWorldOffset(FVector(offsetX, offsetY, 0.0f), true, nullptr, ETeleportType::None);
-	VRTrackingCenter->AddWorldOffset(FVector(offsetX * -1.0f, offsetY * -1.0f, 0.0f), false, nullptr, ETeleportType::None);
+	if (offset.Size() > 15.0f) {
+		AddActorWorldOffset(FVector(offsetX, offsetY, 0.0f), true, nullptr, ETeleportType::None);
+		VRTrackingCenter->AddWorldOffset(FVector(offsetX * -1.0f, offsetY * -1.0f, 0.0f), false, nullptr, ETeleportType::None);
+	}
+
+
 	//ACharacter::GetCapsuleComponent()->SetCapsuleHalfHeight(hmdLoc.Z / 2.0f, true);
 	
 
 	if (leftController->CurrentTrackingStatus == ETrackingStatus::NotTracked) {
 		leftControllerPhysicsMesh->SetSimulatePhysics(false);
+	
 	}
 	else if(!leftControllerPhysicsMesh->IsSimulatingPhysics()){
 		leftControllerPhysicsMesh->SetSimulatePhysics(true);
@@ -301,8 +307,7 @@ void AVRCharacter::SnapTurn(float value) {
 				FAttachmentTransformRules transformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
 				rightGrabbedObject->AttachToComponent(rightController, transformRules);
 			}
-
-			VRTrackingCenter->AddWorldRotation(FRotator(0.0f, value * 45.0f, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+			GetCapsuleComponent()->AddWorldRotation(FRotator(0.0f, value * 45.0f, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
 			canSnapTurn = false;
 
 			if (leftGrabbedObject != nullptr) {
