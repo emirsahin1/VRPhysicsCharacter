@@ -9,6 +9,7 @@
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "PhysicsHand.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -43,56 +44,14 @@ public:
 		UCameraComponent* VRCamera;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UMotionControllerComponent* leftController;
+		APhysicsHand* rightPhysicsHand;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UMotionControllerComponent* rightController;
+		APhysicsHand* leftPhysicsHand;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UStaticMeshComponent* rightConstraint;
+		float freeLocomotionLimit;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UStaticMeshComponent* leftConstraint;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UInversePhysicsSkeletalMeshComponent* rightControllerPhysicsMesh;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UInversePhysicsSkeletalMeshComponent* leftControllerPhysicsMesh;
-	
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UPhysicsConstraintComponent* rightPhysicsConstraint;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UPhysicsConstraintComponent* leftPhysicsConstraint;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UPhysicsConstraintComponent* leftGrabPhysicsConstraint;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UPhysicsConstraintComponent* rightGrabPhysicsConstraint;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UCapsuleComponent* leftGrabCapsule;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		UCapsuleComponent* rightGrabCapsule;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float grabOffsetLimit;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	AActor* leftGrabbedObject;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	AActor* rightGrabbedObject;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float orientStrength;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float velStrength;
 
 private:
 
@@ -126,7 +85,6 @@ private:
 	
 	void OnMoveBegin();
 	void OnMoveEnd();
-	float GetHandToMeshDistance(UInversePhysicsSkeletalMeshComponent* handMesh, UMotionControllerComponent* controler);
 	FVector hmdLoc;
 	FVector capsuleLoc;
 	bool physicsIsOff;
