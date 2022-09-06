@@ -27,22 +27,24 @@ AVRCharacter::AVRCharacter()
 void AVRCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	//DO IN BP
-	/*FAttachmentTransformRules attachmentRules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, false);
+
+	FAttachmentTransformRules attachmentRules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, false);
 	FActorSpawnParameters spawnParams = FActorSpawnParameters();
 	spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	
-	rightPhysicsHand = GetWorld()->SpawnActor<APhysicsHand>(APhysicsHand::StaticClass(), VRTrackingCenter->GetComponentLocation(), VRTrackingCenter->GetComponentRotation(), spawnParams);
-	leftPhysicsHand = GetWorld()->SpawnActor<APhysicsHand>(APhysicsHand::StaticClass(), VRTrackingCenter->GetComponentLocation(), VRTrackingCenter->GetComponentRotation(), spawnParams);
+	FTransform spawnTrans = FTransform(VRTrackingCenter->GetComponentRotation(), VRTrackingCenter->GetComponentLocation(), FVector::OneVector);
+
+	rightPhysicsHand = GetWorld()->SpawnActorDeferred<APhysicsHand>(handClass.Get(), spawnTrans, this, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	leftPhysicsHand = GetWorld()->SpawnActorDeferred<APhysicsHand>(handClass.Get(), spawnTrans, this, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	
 	rightPhysicsHand->handSource = FName("Right");
 	leftPhysicsHand->handSource = FName("Left");
-
-	FVector oldScale = leftPhysicsHand->handMesh->GetComponentScale();
-	leftPhysicsHand->handMesh->SetWorldScale3D(FVector(oldScale.X, oldScale.Y, oldScale.Z * - 1.0f));
+	rightPhysicsHand->SetupHand();
+	leftPhysicsHand->SetupHand();
+	rightPhysicsHand->FinishSpawning(spawnTrans);
+	leftPhysicsHand->FinishSpawning(spawnTrans);
 
 	rightPhysicsHand->AttachToComponent(VRTrackingCenter, attachmentRules);
-	leftPhysicsHand->AttachToComponent(VRTrackingCenter, attachmentRules);*/
+	leftPhysicsHand->AttachToComponent(VRTrackingCenter, attachmentRules);
 }
 
 // Called every frame

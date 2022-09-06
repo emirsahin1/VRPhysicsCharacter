@@ -14,7 +14,7 @@ APhysicsHand::APhysicsHand()
 	grabOffsetLimit = 30.0f;
 	orientStrength = 10000.0;
 	velStrength = 1000.0;
-	handSource = FName();
+	handSource = FName("Right");
 
 	motionController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("motionController"));
 	motionController->SetTrackingMotionSource(FName("Right")); //TODO::Make this dynamic
@@ -64,6 +64,13 @@ void APhysicsHand::BeginPlay()
 {
 	Super::BeginPlay();
 	handPhysicsConstraint->SetConstrainedComponents(constraintMesh, FName(), handMesh, FName());
+}
+
+void APhysicsHand::SetupHand() {
+	motionController->SetTrackingMotionSource(handSource);
+	if (handSource == "Left") {
+		handMesh->SetWorldScale3D(FVector(1.0f, 1.0f, -1.0f));
+	}
 }
 
 // Called every frame
