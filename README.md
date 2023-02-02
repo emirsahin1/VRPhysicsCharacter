@@ -1,3 +1,3 @@
 # VRPhysicsCharacter
 
-Fully physics based VR character. Work in progress. I plan on making a tutorial when done. 
+Fully physics based VR character. A tutorial video is planned.
